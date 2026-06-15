@@ -11,10 +11,15 @@
         <div class="col-md-8">
             <div class="card mb-4">
                 <div class="card-header">
-                    Статус: <span class="badge bg-{{ order.get_status_display == 'Оплачен' ? 'success' : order.get_status_display == 'Ожидает оплаты' ? 'warning' : 'secondary' }}">
-                {{ order.get_status_display }}
-            </span>
-        </div>
+                    <strong>Статус:</strong>
+                    {% if order.status == 'paid' %}
+                        <span class="badge bg-success">{{ order.get_status_display }}</span>
+                    {% elif order.status == 'pending' %}
+                        <span class="badge bg-warning">{{ order.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                    {% endif %}
+                </div>
         <div class="card-body">
             <p><strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
             <p><strong>Сумма:</strong> {{ order.total_amount }} руб.</p>
