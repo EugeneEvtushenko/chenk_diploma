@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} — Магазин{% endblock %}
+
+{% block content %}
+
+<div class="container my-5">
+  <div class="row">
+
+    <!-- Изображение товара -->
+    <div class="col-md-6 mb-4">
+      <div class="product-image-container">
+        {% if product.image %}
+          <img src="{{ product.image.url }}"
+            alt="{{ product.name }}"
+            class="img-fluid rounded shadow"
+            style="max-height: 400px; object-fit: cover;">
+        {% else %}
+          <div class="bg-light text-muted text-center p-5 rounded shadow">
+            Изображение отсутствует
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Информация о товаре -->
+    <div class="col-md-6">
+      <h1 class="mb-3">{{ product.name }}</h1>
+
+      <!-- Цена -->
+      <div class="mb-4">
+        <h3 class="text-primary fw-bold">
+          {{ product.formatted_price }}
+        </h3>
+      </div>
+
+      <!-- Наличие -->
+      <div class="mb-4">
+        <span class="badge {% if product.is_in_stock %}bg-success{% else %}bg-danger{% endif %}">
+          {{ product.get_availability_display }}
+        </span>
+      </div>
+
+      <!-- Характеристики -->
+      <div class="mb-4">
+        <p><strong>Категория:</strong> {{ product.category.name }}</p>
+        <p><strong>Год производства:</strong> {{ product.production_year }}</p>
+        <p><strong>Количество в наличии:</strong> {{ product.amount }} шт.</p>
+      </div>
+
+      <!-- Описание -->
+      {% if product.description %}
+        <div class="mb-4">
+          <h4>Описание</h4>
+          <p>{{ product.description }}</p>
+        </div>
+      {% endif %}
+
+      <!-- Кнопки действий -->
+      <div class="d-grid gap-2 d-md-block">
+        {% if product.is_in_stock %}
+          <!-- Форма добавления в корзину -->
+          <form method="post" action="{% url 'cart:add_to_cart' %}">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <div class="mb-3">
+              <label for="quantity">Количество:</label>
+              <input type="number" id="quantity" name="quantity" value="1" min="1" max="999" class="form-control" style="width: 100px;">
+            </div>
+            <button type="submit" class="btn btn-success">Добавить в корзину</button>
+            <a href="{% url 'store:catalog' %}" class="btn btn-primary">
+              Вернуться к каталогу
+            </a>
+          </form>
+        {% else %}
+          <button class="btn btn-secondary btn-lg w-100" disabled type="button">
+            Нет в наличии
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Дополнительная информация (опционально) -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="border p-4 rounded bg-light">
+        <h4>Информация о доставке</h4>
+        <p>Подготовим и отправим Ваш заказ в течение 24 часов после оформления.</p>
+        <p class="text-muted">
+          *Условия доставки уточняйте у менеджера.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Скрипт для AJAX-добавления в корзину -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('add-to-cart-form');
+
+      if (form) {
+          form.addEventListener('submit', function(e) {
+              e.preventDefault();
+
+              const formData = new FormData(form);
+
+              fetch(form.action, {
+                  method: 'POST',
+                  body: formData,
+                  headers: {
+                      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Показываем уведомление
+                      showNotification(data.message, 'success');
+
+                      // Обновляем счётчик корзины в шапке (если есть)
+                      updateCartCounter(data.cart_count);
+                  } else {
+                      showNotification(data.error || 'Ошибка при добавлении в корзину', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Ошибка:', error);
+                  showNotification('Произошла ошибка при добавлении в корзину', 'error');
+              });
+          });
+      }
+
+      // Функция показа уведомлений
+      function showNotification(message, type) {
+          let alertClass, icon;
+          if (type === 'success') {
+              alertClass = 'alert-success';
+              icon = '✅';
+          } else {
+              alertClass = 'alert-danger';
+              icon = '❌';
+          }
+
+          const alert = document.createElement('div');
+          alert.className = `alert ${alertClass} alert-dismissible fade show mt-3 position-fixed top-0 start-50 translate-middle-x`;
+          alert.style.zIndex = '1050';
+          alert.role = 'alert';
+          alert.innerHTML = `
+              <div class="d-flex align-items-center">
+                  <span class="fs-4 me-2">${icon}</span>
+                  <span>${message}</span>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+
+          document.body.appendChild(alert);
+
+          setTimeout(() => {
+              alert.remove();
+          }, 5000);
+      }
+  });
+</script>
+{% endblock %}

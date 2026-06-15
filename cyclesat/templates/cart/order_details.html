@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Заказ №{{ order.order_number }} — Магазин{% endblock %}
+
+
+{% block content %}
+<div class="container my-5">
+    <h1>Заказ №{{ order.order_number }}</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Статус: <span class="badge bg-{{ order.get_status_display == 'Оплачен' ? 'success' : order.get_status_display == 'Ожидает оплаты' ? 'warning' : 'secondary' }}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <p><strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+            <p><strong>Сумма:</strong> {{ order.total_amount }} руб.</p>
+            <p><strong>Адрес доставки:</strong> {{ order.shipping_address }}</p>
+            <p><strong>Телефон:</strong> {{ order.contact_phone }}</p>
+        </div>
+    </div>
+
+    <h3>Состав заказа:</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th>Сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.price }} руб.</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.total_price }} руб.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="col-md-4">
+    <div class="card">
+        <div class="card-body">
+            <h5>Действия</h5>
+            {% if order.status == 'pending' %}
+                <a href="#" class="btn btn-warning btn-block mb-2">Оплатить заказ</a>
+            {% endif %}
+            <a href="{% url 'cart:cart_detail' %}" class="btn btn-outline-secondary btn-block">Вернуться в корзину</a>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

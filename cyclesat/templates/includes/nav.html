@@ -1,0 +1,45 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Переключить навигацию">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %} text-white""
+             href="{% url 'store:index' %}">ГЛАВНАЯ</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %} text-white""
+             href="{% url 'store:catalog' %}">КАТАЛОГ</a>
+        </li>
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a href="{% url 'cart:cart_detail' %}" class="nav-link {% if request.resolver_match.url_name == 'cart_detail' %}active{% endif %} text-white">
+              КОРЗИНА
+              <span id="cart-counter" class="badge bg-primary ms-1">
+                {% with cart_items=request.user.cart.items.all %}
+                {{ cart_items|length }}
+                {% endwith %}
+              </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'users:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %} text-white">ПРОФИЛЬ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="{% url 'users:logout' %}">ВЫХОД</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %} text-white" href="{% url 'users:login' %}">
+              ВХОД
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

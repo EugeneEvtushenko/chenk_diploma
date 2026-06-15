@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Каталог{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="catalog-container col-12 col-lg-10 col-xl-9 mx-auto">
+    <!-- Единая форма для всех фильтров -->
+    <form method="get" class="mb-4">
+      <!-- Форма поиска -->
+      <div class="row g-3 align-items-center justify-content-center mb-3">
+        <div class="col-12 col-md-8">
+          <input type="text" name="search" value="{{ search_query }}"
+          class="form-control" placeholder="Поиск товаров...">
+        </div>
+        <div class="col-12 col-md-4">
+          <button type="submit" class="btn btn-primary w-100">Найти</button>
+        </div>
+      </div>
+
+      <!-- Фильтр по категориям -->
+      <div class="mb-4">
+        <div class="row g-2">
+          <div class="col-12 mx-auto">
+            <select name="category" class="form-select" onchange="this.form.submit()">
+              <option value="">Все категории</option>
+              {% for category in categories %}
+                <option value="{{ category.id }}" {% if category_id|stringformat:"i" == category.id|stringformat:"i" %}selected{% endif %}>
+                  {{ category.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопки сортировки -->
+      <div class="mb-4 sorting-buttons">
+        <div class="row">
+          <div class="col-12">
+            <div class="btn-group w-100 flex-wrap gap-1" role="group">
+
+              <!-- По названию -->
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=name&order=asc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'name' and sort_order == 'asc' %}active{% endif %}">
+                А → Я
+              </a>
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=name&order=desc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'name' and sort_order == 'desc' %}active{% endif %}">
+                Я → А
+              </a>
+
+              <!-- По цене -->
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=price&order=asc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'price' and sort_order == 'asc' %}active{% endif %}">
+                Цена ↑
+              </a>
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=price&order=desc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'price' and sort_order == 'desc' %}active{% endif %}">
+                Цена ↓
+              </a>
+
+              <!-- По году выпуска -->
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=production_year&order=asc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'production_year' and sort_order == 'asc' %}active{% endif %}">
+                Год ↑
+              </a>
+              <a href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort=production_year&order=desc"
+                  class="btn btn-outline-primary btn-sort flex-fill {% if sort_by == 'production_year' and sort_order == 'desc' %}active{% endif %}">
+                Год ↓
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form> <!-- Закрытие единой формы -->
+
+    <!-- Карточки товаров -->
+    {% if products %}
+      <div class="products-grid">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+          {% for product in products %}
+            <div class="col">
+              {% include 'store/includes/product_card.html' with product=product %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="col-12">
+        <div class="alert alert-info text-center">
+          Товары не найдены. Попробуйте изменить параметры поиска.
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Пагинация -->
+    {% if paginator.num_pages > 1 %}
+      <nav aria-label="Навигация по страницам" class="mt-5">
+        <ul class="pagination justify-content-center">
+          <!-- Кнопка «Назад» -->
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page_obj.previous_page_number }}">
+                ← Назад
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">← Назад</span>
+            </li>
+          {% endif %}
+
+          <!-- Номера страниц -->
+          {% for num in paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active" aria-current="page">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+              <li class="page-item">
+                <a class="page-link" href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ num }}">
+                  {{ num }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Кнопка «Вперёд» -->
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?search={{ search_query|urlencode }}&category={{ category_id }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page_obj.next_page_number }}">
+                  Вперёд →
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Вперёд →</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

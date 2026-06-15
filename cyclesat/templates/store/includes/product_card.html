@@ -1,0 +1,43 @@
+<div class="card h-100 shadow">
+  <!-- Блок с изображением -->
+  <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px;">
+    {% if product.image %}
+      <img src="{{ product.image.url }}"
+        alt="{{ product.name }}"
+        class="img-fluid"
+        style="max-height: 200px; object-fit: cover;">
+    {% else %}
+      <span class="text-muted">Изображение отсутствует</span>
+    {% endif %}
+  </div>
+
+  <!-- Блок с информацией -->
+  <div class="card-body">
+    <small class="text-muted mb-2 d-block">
+      Категория: <strong>{{ product.category.name }}</strong>
+    </small>
+
+    <h5 class="card-title">{{ product.name }}</h5>
+    <p class="card-text text-muted">
+      {{ product.description|truncatewords:15 }}
+    </p>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="fw-bold text-primary fs-5">
+        {{ product.price|default:"—" }} руб.
+      </span>
+      {% if product.production_year %}
+        <small class="text-muted">Год: {{ product.production_year }}</small>
+      {% else %}
+        <small class="text-muted">Год не указан</small>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Блок с кнопками -->
+  <div class="card-footer bg-white border-0 pt-0">
+    <a href="{% url 'store:product_detail' product_id=product.id %}" class="btn btn-outline-primary btn-sm w-100">
+      Подробнее
+    </a>
+  </div>
+</div>

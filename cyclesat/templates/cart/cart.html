@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}Корзина{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Корзина</h2>
+
+    {% if cart_items %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                <th scope="col">Товар</th>
+                <th scope="col">Цена за ед.</th>
+                <th scope="col">Количество</th>
+                <th scope="col">Итого</th>
+                <th scope="col" class="text-end">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr data-item-id="{{ item.id }}">
+                <td class="align-middle">{{ item.product.name }}</td>
+                <td class="align-middle">{{ item.price_at_addition }} руб.</td>
+                <td class="align-middle">
+                    <div class="quantity-controls">
+                <button class="btn btn-outline-secondary btn-sm minus-btn">-</button>
+                <input type="number"
+                       class="form-control quantity-input"
+                       value="{{ item.quantity }}"
+                       min="1"
+                       max="999"
+                       data-item-id="{{ item.id }}"
+                       style="width: 60px; text-align: center;">
+                <button class="btn btn-outline-secondary btn-sm plus-btn">+</button>
+            </div>
+        </td>
+        <td class="align-middle item-total">{{ item.total_price }} руб.</td>
+        <td class="align-middle text-end">
+            {% csrf_token %}
+            <input type="hidden" name="cart_item_id" value="{{ item.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h4>Общая сумма: <span class="total-price">{{ total_price }} руб.</span></h4>
+    </div>
+    <div class="col-md-6 text-end">
+        <!-- Форма для оформления заказа -->
+        <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#orderModal">
+            Оформить заказ
+        </button>
+    </div>
+</div>
+
+<!-- Модальное окно оформления заказа -->
+<div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Оформление заказа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="orderForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="shippingAddress" class="form-label">Адрес доставки</label>
+                        <textarea class="form-control" id="shippingAddress" name="shipping_address" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactPhone" class="form-label">Контактный телефон</label>
+                        <input type="tel" class="form-control" id="contactPhone" name="contact_phone" required>
+                    </div>
+                    <p><strong>Общая сумма:</strong> {{ total_price }} руб.</p>
+                </form>
+            </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="confirmOrder">Подтвердить заказ</button>
+    </div>
+</div>
+</div>
+</div>
+
+{% else %}
+    <div class="text-center py-5">
+        <h4>Корзина пуста</h4>
+        <p><a href="{% url 'store:catalog' %}" class="btn btn-primary">Перейти в каталог</a></p>
+    </div>
+{% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Функция обновления количества
+    function updateQuantity(itemId, newQuantity) {
+        fetch('{% url "cart:update_cart_item" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken
+            },
+            body: `item_id=${itemId}&quantity=${newQuantity}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const itemRow = document.querySelector(`[data-item-id="${itemId}"]`);
+                if (data.total_price === 0) {
+                    // Товар удалён — удаляем строку
+            itemRow.remove();
+            updateCartDisplay();
+        } else {
+            const totalCell = itemRow.querySelector('.item-total');
+            totalCell.textContent = `${data.total_price} руб.`;
+        }
+        // Обновляем общую сумму
+        document.querySelectorAll('.total-price').forEach(el => {
+            el.textContent = `${data.total_cart_price} руб.`;
+        });
+        showNotification(data.message, 'success');
+    } else {
+        showNotification(data.error, 'error');
+    }
+});
+}
+
+// Обработчики для кнопок «+» и «−»
+document.querySelectorAll('.minus-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.nextElementSibling;
+        let quantity = parseInt(input.value) - 1;
+        if (quantity < 1) quantity = 1;
+        input.value = quantity;
+        const itemId = input.dataset.itemId;
+        updateQuantity(itemId, quantity);
+    });
+});
+
+document.querySelectorAll('.plus-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        const quantity = parseInt(input.value) + 1;
+        input.value = quantity;
+        const itemId = input.dataset.itemId;
+        updateQuantity(itemId, quantity);
+    });
+});
+
+// Обработчик для поля ввода количества
+document.querySelectorAll('.quantity-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const itemId = this.dataset.itemId;
+        const quantity = this.value;
+        updateQuantity(itemId, quantity);
+    });
+});
+
+// Обработчик для кнопки удаления
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            updateCartCounter(data.total_items || data.cart_count);
+            if (window.location.pathname === '/cart/') {
+                location.reload(); // Перезагрузка страницы корзины
+            }
+        } else {
+            showNotification(data.error || 'Неизвестная ошибка', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка AJAX:', error);
+        showNotification('Ошибка сети или сервера. Проверьте подключение.', 'error');
+    });
+});
+
+// Обработчик подтверждения заказа
+document.getElementById('confirmOrder').addEventListener('click', function() {
+    const shippingAddress = document.getElementById('shippingAddress').value;
+    const contactPhone = document.getElementById('contactPhone').value;
+
+    fetch('{% url "cart:create_order" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `shipping_address=${encodeURIComponent(shippingAddress)}&contact_phone=${encodeURIComponent(contactPhone)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
+            modal.hide();
+
+            // Обновляем отображение корзины
+            updateCartDisplay();
+
+            // Показываем уведомление об успехе
+            showNotification(data.message, 'success');
+
+            // Перенаправляем на страницу профиля
+            setTimeout(() => {
+                window.location.href = '{% url "users:profile" %}';
+            }, 2000);
+        } else {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка при создании заказа:', error);
+        showNotification('Произошла ошибка при оформлении заказа', 'error');
+    });
+});
+
+// Обновление отображения корзины при пустом состоянии
+function updateCartDisplay() {
+    const items = document.querySelectorAll('tbody tr');
+    if (items.length === 0) {
+        document.querySelector('tbody').innerHTML = `
+            <tr><td colspan="5" class="text-center py-5">
+                <div class="alert alert-info mb-0">Корзина пуста. <a href="{% url 'store:catalog' %}">Перейти в каталог</a></div>
+            </td></tr>
+        `;
+        document.querySelectorAll('.total-price').forEach(el => {
+            el.textContent = '0 руб.';
+        });
+        // Скрываем кнопку оформления заказа, если корзина пуста
+        document.querySelector('.col-md-6.text-end').style.display = 'none';
+    }
+}
+
+// Показ уведомлений
+function showNotification(message, type) {
+    let alertClass, icon;
+    if (type === 'success') {
+        alertClass = 'alert-success';
+        icon = '✅';
+    } else {
+        alertClass = 'alert-danger';
+        icon = '❌';
+    }
+
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show mt-3 position-fixed top-0 start-50 translate-middle-x`;
+    alert.style.zIndex = '1050';
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span class="fs-4 me-2">${icon}</span>
+            <span>${message}</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,9 @@
+id,name,slug
+1,Экипировка,equipment
+2,Тормозная система,braking_system
+3,Подвеска,suspension
+4,Аксессуары,accessories
+5,Трансмиссия,transmission
+6,Колеса,wheels
+7,Педали,pedals
+8,Кокпит,cockpit
