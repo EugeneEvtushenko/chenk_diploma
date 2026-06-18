@@ -33,7 +33,7 @@
 ### Шаги по развёртыванию
 
 1. При необходимости установите ПО, воспользовавшись ссылками:
-    - интерпритатор Python 3.12 https://www.python.org/downloads/release/python-3120/
+    - интерпретатор Python 3.12 https://www.python.org/downloads/release/python-3120/
     - эмулятор командной строки Git Bash https://git-scm.com/install/windows
 
 
